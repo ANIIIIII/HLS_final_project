@@ -22,35 +22,10 @@ ap_uint<64> permute(ap_uint<64> source){
     return permutation;
 }
 
-ap_uint<64> fromHexStringToLong (char* block){
-	ap_uint<64> result;
-    // each character is 4 bits, there are 16 characters in a 64-bit block
-
-    for (int i=0; i<16; i++)
-        result = (result << 4) | ((block[i]>='0' && block[i]<='9')? (block[i] - '0') : (block[i] - 'a' + 10));
-    return result;
-}
-
-void fromLongToHexString (ap_uint<64> block, char hexString[17]){
-	ap_uint<64> mask = 15;
-
-    for (int i = 15; i >= 0; i--) {
-    	ap_uint<8> tmp = (ap_uint<8>) (block & mask);
-
-        if (tmp < 10) {
-            hexString[i] = tmp + '0';
-        } else {
-            hexString[i] = tmp - 10 + 'a';
-        }
-        block >>= 4;
-    }
-    hexString[16] = '\0';
-
-}
 
 void generateSubkeys(char* key, ap_uint<64> subKeys[32]) {
-	ap_uint<64> keyHigh = fromHexStringToLong(key);
-	ap_uint<64> keyLow = fromHexStringToLong(key + 16);
+	ap_uint<64> keyHigh = 0;
+	ap_uint<64> keyLow = 0;
     // allocate space for 32 rounds
 
     //the first subkey is the high part of the original key
@@ -78,33 +53,32 @@ void generateSubkeys(char* key, ap_uint<64> subKeys[32]) {
     }
 }
 
-void encrypt(char* plaintext, char* key, char* res){
+void encrypt(char* plaintext, char* key, ap_uint<64> *state){
     //generate the subkeys using the function defined above
 	ap_uint<64> subkeys[32];
 	generateSubkeys(key, subkeys);
     //convert the plaintext from a Hex String to a 64-bit integer
-	ap_uint<64> state = fromHexStringToLong(plaintext);
     //apply first 31 rounds
     for (int i=0; i < 31; i++){
         //XOR the state with the round subkey
-        state = state ^ subkeys[i];
+        *state = *state ^ subkeys[i];
 
         //run each nibble through the SBox
         ap_uint<64> mask = 15;
         ap_uint<8> sin, sres;
         for (int j=0; j<16; j++) {
-            sin = (state >> (4*j)) & mask;
+            sin = (*state >> (4*j)) & mask;
             sres = Sbox(sin);
-            state &= ~(mask << (4*j)); // clear the old nibble
-            state |= (ap_uint<64>)sres << (4*j);
+            *state &= ~(mask << (4*j)); // clear the old nibble
+            *state |= (ap_uint<64>)sres << (4*j);
         }
         //return the nibbles in a 64-bit integer format and perform the permutation defined above
-        state = permute(state);
+        *state = permute(*state);
     }
     //the last round only XORs the state with the round key
-    state = state ^ subkeys[31];
+    *state = *state ^ subkeys[31];
     //free the memory of the subkeys (they are not needed anymore)
     // free(subkeys);
-    fromLongToHexString(state, res);
+    //fromLongToHexString(state, res);
 }
 
