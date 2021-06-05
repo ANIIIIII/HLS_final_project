@@ -5,7 +5,7 @@
 
 using namespace std;
 
-void encrypt(char*, char*, ap_uint<64>*);
+void encrypt(ap_uint<128>, ap_uint<64>*);
 
 #endif
 
