@@ -94,6 +94,7 @@ ap_uint<6> permutation(ap_uint<6> out){
 	return out;
 }
 void encrypt(ap_uint<128> key, ap_uint<64> *plaintext){
+#pragma HLS expression_balance
 	ap_uint<64> state = *plaintext;
 	ap_uint<16> r[4];
 	ap_uint<64> p = *plaintext;
@@ -121,7 +122,11 @@ void encrypt(ap_uint<128> key, ap_uint<64> *plaintext){
 	}
 
 	for(int i = 1; i < 129; i++){
-#pragma HLS latency max=1
+
+		for(int j = 0; j < 4; j++){
+#pragma HLS unroll factor=4
+			t0.range(j * 4 + 3, j * 4) = temp1[j].range((i % 4) * 4 + 16 + 3, (i % 4) * 4 + 16);
+		}
 		// key schedule
 		if((i - 1) % 8 <= 3){
 			for(int j = 0; j < 4; j++){
@@ -185,12 +190,6 @@ void encrypt(ap_uint<128> key, ap_uint<64> *plaintext){
 			temp1[0].range(18, 16) = temp0[0].range(18, 16) ^ cnt.range(4, 2);
 			cnt = cnt + 1;
 		}
-
-		for(int j = 0; j < 4; j++){
-#pragma HLS unroll factor=4
-			t0.range(j * 4 + 3, j * 4) = temp1[j].range((i % 4) * 4 + 16 + 3, (i % 4) * 4 + 16);
-		}
-
 
 		state >>= 16;
 		state.range(63, 48) = tmp1;
