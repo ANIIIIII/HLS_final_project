@@ -1,4 +1,4 @@
-  #ifndef __ENCRYPT_H__
+#ifndef __ENCRYPT_H__
 #define __ENCRYPT_H__
 
 #include "ap_int.h"
