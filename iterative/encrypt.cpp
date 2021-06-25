@@ -93,41 +93,44 @@ ap_uint<6> permutation(ap_uint<6> out){
 }
 
 void encrypt(ap_uint<128> key, ap_uint<64> *plaintext){
-	ap_uint<64> state;
-	ap_uint<64> tmp;
-	ap_uint<128> tmp0 = key, tmp1;
+	static ap_uint<4> cnt; // 4-bit counter
+	static ap_uint<6> round; // 6-bit round counter
+
+	static ap_uint<64> state;
+	static ap_uint<128> key_state = key;
+	ap_uint<64> cipher_wire1, cipher_wire2;
+	ap_uint<128> key_wire;
 
     // read input through 8-bit I/O 
-    for (ap_uint<4> i = 0; i < 8; i++) {
-        state.range((8-i)*8-1, (7-i)*8) = plaintext->range((8-i)*8-1, (7-i)*8) ^ tmp0.range((16-i)*8-1, (15-i)*8);
+    INPUT: for (cnt = 0; cnt < 8; cnt++) {
+        state.range(63-8*cnt, 56-8*cnt) = plaintext->range(63-8*cnt, 56-8*cnt) ^ key_state.range(127-8*cnt, 120-8*cnt);
     }
 
     // encrypt for 31 rounds
-    for(ap_uint<6> i = 0; i < 31; i++) {
+    ENCODE: for(round = 0; round < 31; round++) {
         // s-box
         for(ap_uint<5> j = 0; j < 16; j++) {
 #pragma HLS unroll factor = 16
-        	state.range((j+1)*4-1, j*4) = sbox(state.range((j+1)*4-1, j*4));
+        	cipher_wire1.range((j+1)*4-1, j*4) = sbox(state.range((j+1)*4-1, j*4));
         }
         // permutation
         for(ap_uint<7> j = 0; j < 64; j++){
 #pragma HLS unroll factor = 64
-            tmp[permutation(j)] = state[j];
+            cipher_wire2[permutation(j)] = cipher_wire1[j];
         }
-        state = tmp;
 
         // key scheduling
-        tmp1 = (tmp0.range(66, 0), tmp0.range(127, 67));
-        tmp1.range(127, 124) = sbox(tmp1.range(127, 124));
-        tmp1.range(123, 120) = sbox(tmp1.range(123, 120));
-        tmp1.range(66, 62) = tmp1.range(66, 62) ^ (i + 1).range(4, 0);
+        key_wire = (key_state.range(66, 0), key_state.range(127, 67));
+        key_wire.range(127, 124) = sbox(key_wire.range(127, 124));
+        key_wire.range(123, 120) = sbox(key_wire.range(123, 120));
+        key_wire.range(66, 62) = key_wire.range(66, 62) ^ (round + 1).range(4, 0);
 
-        state = state ^ tmp1.range(127, 64); // xor key
-        tmp0 = tmp1; // next key state
+        state = cipher_wire2 ^ key_wire.range(127, 64); // xor key
+        key_state = key_wire;
     }
 
     // output through 8-bit I/O
-    for (ap_uint<4> i = 0; i < 8; i++) {
-        plaintext->range((i+1)*8-1, i*8) = state.range((i+1)*8-1, i*8);
+    OUTPUT: for (cnt = 0; cnt < 8; cnt++) {
+        plaintext->range(63-8*cnt, 56-8*cnt) = state.range(63-8*cnt, 56-8*cnt);
     }
 }
