@@ -28,8 +28,6 @@ void encrypt(ap_uint<128> key, ap_uint<64> *plaintext){
 	ap_uint<16> tmp0, tmp1, tmp2;
 	ap_uint<16> t0 = 0;
 	ap_uint<32> k[4], temp0[4];
-	ap_uint<5> cnt = 1;
-	ap_uint<3> ctr = 0;
 
 	for(ap_uint<8> i = 0; i < 136; i++){
 		if(!i.range(7, 3)){
@@ -55,7 +53,7 @@ void encrypt(ap_uint<128> key, ap_uint<64> *plaintext){
 #pragma HLS unroll factor=4
 				k[j].range(31, 16) = (k[j].range(27, 16), k[j].range(31, 28));
 			}
-			if(ctr.range(1, 0) == 3){
+			if(i.range(1, 0) == 3){
 				for(int j = 0; j < 128; j++){
 #pragma HLS unroll factor=128
 					int u = (j + 67) % 128;
@@ -63,9 +61,9 @@ void encrypt(ap_uint<128> key, ap_uint<64> *plaintext){
 				}
 				temp0[2].range(31, 28) = sbox(temp0[2].range(31, 28));
 				temp0[3].range(31, 28) = sbox(temp0[3].range(31, 28));
-				temp0[3].range(15, 14) = temp0[3].range(15, 14) ^ cnt.range(1, 0);
-				temp0[0].range(18, 16) = temp0[0].range(18, 16) ^ cnt.range(4, 2);
-				cnt = cnt + 1;
+				temp0[3].range(15, 14) = temp0[3].range(15, 14) ^ ((i - 4).range(3, 2));
+				temp0[0].range(18, 16) = temp0[0].range(18, 16) ^ ((i - 4).range(6, 4));
+				//cnt = cnt + 1;
 
 				for(int j = 0; j < 4; j++){
 #pragma HLS unroll factor=4
@@ -73,7 +71,7 @@ void encrypt(ap_uint<128> key, ap_uint<64> *plaintext){
 				}
 			}
 
-			if(!ctr[2]){
+			if(!i[2]){
 				for(int j = 0; j < 4; j++){
 #pragma HLS unroll factor=4
 					tmp0.range(j * 4 + 3, j * 4) = r[3 - j].range(3, 0);
@@ -99,7 +97,7 @@ void encrypt(ap_uint<128> key, ap_uint<64> *plaintext){
 				tmp2.range(j * 4 + 3, j * 4) = sbox(tmp1.range(j * 4 + 3, j * 4));
 			}
 			// permutation
-			if(!ctr[2]){
+			if(!i[2]){
 				for(int j = 0; j < 4; j++){
 #pragma HLS unroll factor=4
 					for(int u = 0; u < 4; u++){
@@ -117,11 +115,9 @@ void encrypt(ap_uint<128> key, ap_uint<64> *plaintext){
 				}
 			}
 
-
 			*plaintext <<= 16;
 			(*plaintext).range(15, 0) = tmp1;
-			ctr++;
+
 		}
 	}
 }
-
