@@ -105,12 +105,12 @@ void encrypt(ap_uint<128> key, ap_uint<64> *plaintext) {
 
     /* read plaintext through 8-bit I/O */
     INPUT: for (i_cnt = 0; i_cnt < 16; i_cnt++) {
-		if (i_cnt < 8) {
+	    	if (i_cnt < 8) {
 			state = state << 8;
-            state.range(7, 0) = plaintext->range(63-8*i_cnt, 56-8*i_cnt);
+            		state.range(7, 0) = plaintext->range(63-8*i_cnt, 56-8*i_cnt);
 		}
 		key_state = key_state << 8;
-        key_state.range(7, 0) = key.range(127-8*i_cnt, 120-8*i_cnt);
+        	key_state.range(7, 0) = key.range(127-8*i_cnt, 120-8*i_cnt);
 	}
 
     /* encrypt for 31 rounds */
@@ -134,10 +134,10 @@ void encrypt(ap_uint<128> key, ap_uint<64> *plaintext) {
 
         // key update at 9th cycle
         tmp = (key_state.range(2, 0), key_state.range(127, 3)); // tmp left 125 bits
-		tmp.range(127, 124) = sbox(tmp.range(127, 124));
+	tmp.range(127, 124) = sbox(tmp.range(127, 124));
     	tmp.range(123, 120) = sbox(tmp.range(123, 120));
         tmp.range(66, 62) = tmp.range(66, 62) ^ (round + 1).range(4, 0);
-		key_state = tmp;
+	key_state = tmp;
 
         // permutation
         for(ap_uint<7> j = 0; j < 64; j++){
