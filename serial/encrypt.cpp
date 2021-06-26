@@ -93,28 +93,28 @@ ap_uint<6> permutation(ap_uint<6> out){
 }
 
 void encrypt(ap_uint<128> key, ap_uint<64> *plaintext) {
-    ap_uint<8> cipher, sres;
-    // shift left register
-	ap_uint<64> state, pmt;
-	ap_uint<128> key_state, shift;
+	static ap_uint<4> o_cnt;
+	static ap_uint<5> i_cnt;
+	static ap_uint<6> round;
+    static ap_uint<64> state;
+	static ap_uint<128> key_state;
+
+	ap_uint<8> cipher, sres;
+	ap_uint<64> pmt;
+	ap_uint<128> tmp;
 
     /* read plaintext through 8-bit I/O */
-    READ_IO: {
-#pragma HLS loop_merge force
-        for (ap_uint<4> i = 0; i < 8; i++) {
-            state = state << 8;
-            state.range(7, 0) = plaintext->range((8-i)*8-1, (7-i)*8);
-        }
-        //read key through 8-bit I/O
-        for (ap_uint<5> i = 0; i < 16; i++) {
-            key_state = key_state << 8;
-            key_state.range(7, 0) = key.range((16-i)*8-1, (15-i)*8);
-        }
-    }
+    INPUT: for (i_cnt = 0; i_cnt < 16; i_cnt++) {
+		if (i_cnt < 8) {
+			state = state << 8;
+            state.range(7, 0) = plaintext->range(63-8*i_cnt, 56-8*i_cnt);
+		}
+		key_state = key_state << 8;
+        key_state.range(7, 0) = key.range(127-8*i_cnt, 120-8*i_cnt);
+	}
 
     /* encrypt for 31 rounds */
-    ENC_ROUNDS: for(ap_uint<6> i = 0; i < 31; i++) {
-
+    ENC_ROUNDS: for(round = 0; round < 31; round++) {
         // 8 sub-rounds
         SUB_ROUNDS: for (ap_uint<4> j = 0; j < 8; j++) {
             
@@ -127,18 +127,17 @@ void encrypt(ap_uint<128> key, ap_uint<64> *plaintext) {
             // 2 s-boxs
             for (ap_uint<2> k = 0; k < 2; k++) {
 #pragma HLS unroll factor = 2
-                sres.range(7-4*k, 7-4*k-3) = sbox(cipher.range(7-4*k, 7-4*k-3));
+                sres.range(7-4*k, 4-4*k) = sbox(cipher.range(7-4*k, 4-4*k));
             }
             state.range(7, 0) = sres;
         }
 
         // key update at 9th cycle
-        key_state = (key_state.range(2, 0), key_state.range(127, 3)); // shift left 125 bits
-        for (ap_uint<2> k = 0; k < 2; k++) {
-#pragma HLS unroll factor = 2
-            key_state.range(127-4*k, 127-4*k-3) = sbox(key_state.range(127-4*k, 127-4*k-3));
-        }
-        key_state.range(66, 62) = key_state.range(66, 62) ^ (i + 1).range(4, 0);
+        tmp = (key_state.range(2, 0), key_state.range(127, 3)); // tmp left 125 bits
+		tmp.range(127, 124) = sbox(tmp.range(127, 124));
+    	tmp.range(123, 120) = sbox(tmp.range(123, 120));
+        tmp.range(66, 62) = tmp.range(66, 62) ^ (round + 1).range(4, 0);
+		key_state = tmp;
 
         // permutation
         for(ap_uint<7> j = 0; j < 64; j++){
@@ -149,8 +148,8 @@ void encrypt(ap_uint<128> key, ap_uint<64> *plaintext) {
     }
 
     /* output through 8-bit I/O */
-    OUTPUT: for (ap_uint<4> i = 0; i < 8; i++) {
-        plaintext->range((8-i)*8-1, (7-i)*8) = state.range(63, 56) ^ key_state.range(127, 120);
+    OUTPUT: for (o_cnt = 0; o_cnt < 8; o_cnt++) {
+        plaintext->range(63-8*o_cnt, 56-8*o_cnt) = state.range(63, 56) ^ key_state.range(127, 120);
         state = state << 8;
         key_state = key_state << 8;
     }
