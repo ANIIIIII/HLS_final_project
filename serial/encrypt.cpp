@@ -96,7 +96,7 @@ void encrypt(ap_uint<128> key, ap_uint<64> *plaintext) {
 	static ap_uint<4> o_cnt;
 	static ap_uint<5> i_cnt;
 	static ap_uint<6> round;
-    static ap_uint<64> state;
+    	static ap_uint<64> state;
 	static ap_uint<128> key_state;
 
 	ap_uint<8> cipher, sres;
