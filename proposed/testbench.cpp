@@ -9,7 +9,7 @@ int main() {
     ap_uint<128> key = 0;
     cout << "plaintext = " << hex << state << "\n";
     cout << "key = 0x" << key << "\n";
-    encrypt(key, &state);
+    encrypt(&key, &state);
     cout << "ciphertext = " << hex << state << '\n';
 
     return 0;

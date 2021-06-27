@@ -23,7 +23,7 @@ ap_uint<4> sbox(ap_uint<4> out){
 	return out;
 }
 
-void encrypt(ap_uint<128> key, ap_uint<64> *plaintext){
+void encrypt(ap_uint<128> *key, ap_uint<64> *plaintext){
 	ap_uint<16> r[4];
 	ap_uint<16> tmp0, tmp1, tmp2;
 	ap_uint<16> t0 = 0;
@@ -34,8 +34,9 @@ void encrypt(ap_uint<128> key, ap_uint<64> *plaintext){
 			for(int j = 0; j < 4; j++){
 #pragma HLS unroll factor=4
 				k[j] >>= 4;
-				k[j].range(31, 28) = 0;
+				k[j].range(31, 28) = (*key).range(127 - j * 4, 124 - j * 4);
 			}
+			(*key) <<= 16;
 			if(!i[2]){
 				for(int j = 0; j < 4; j++){
 #pragma HLS unroll factor=4
@@ -63,7 +64,6 @@ void encrypt(ap_uint<128> key, ap_uint<64> *plaintext){
 				temp0[3].range(31, 28) = sbox(temp0[3].range(31, 28));
 				temp0[3].range(15, 14) = temp0[3].range(15, 14) ^ ((i - 4).range(3, 2));
 				temp0[0].range(18, 16) = temp0[0].range(18, 16) ^ ((i - 4).range(6, 4));
-				//cnt = cnt + 1;
 
 				for(int j = 0; j < 4; j++){
 #pragma HLS unroll factor=4
@@ -114,10 +114,8 @@ void encrypt(ap_uint<128> key, ap_uint<64> *plaintext){
 					}
 				}
 			}
-
 			*plaintext <<= 16;
 			(*plaintext).range(15, 0) = tmp1;
-
 		}
 	}
 }
