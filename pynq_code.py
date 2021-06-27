@@ -1,31 +1,45 @@
-# coding: utf-8
-
+import sys
+from time import time
+from pynq import Overlay
+from pynq import allocate
 from __future__ import print_function
 
-import sys
+ROOT = '/home/xilinx/IPBitFile'
+PATH = ROOT+'/design_1.bit'
 
-sys.path.append('/home/xilinx')
-from pynq import Overlay
+ol = Overlay(PATH)
+encIP = ol.encrypt_0
 
-print("Entry:", sys.argv[0])
-print("System argument(s):", len(sys.argv))
+# contrl signal
+CONTROL = 0x0
+AP_START = 0x01
+AP_DONE = 0x02
+AP_IDLE = 0x04
+AP_READY = 0x08
 
-print("Start of \"" + sys.argv[0] + "\"")
+# i/O port
+KEY_V_1 = 0x10
+KEY_V_2 = 0x14
+KEY_V_3 = 0x18
+KEY_V_4 = 0x1C
 
-ol = Overlay("/home/xilinx/IPBitFile/design_1.bit")
-regIP = ol.encrypt_0
+P_V_I_1 = 0x24
+P_V_I_2 = 0x28
 
+P_V_O_1 = 0x30
+P_V_O_2 = 0x34
 
-regIP.write(16, 0)
-regIP.write(20, 0)
-regIP.write(24, 0)
-regIP.write(28, 0)
+encIP.write(KEY_V_1, 0)
+encIP.write(KEY_V_2, 0)
+encIP.write(KEY_V_3, 0)
+encIP.write(KEY_V_4, 0)
 
-regIP.write(36, 0x6f030303)
-regIP.write(40, 0x68656c6c)
+encIP.write(P_V_I_1, 0x6f030303)
+encIP.write(P_V_I_2, 0x68656c6c)
 
-regIP.write(0x0, 0x01)
+# start
+encIP.write(CONTROL, AP_START)
 
-res_low = regIP.read(48)
-res_high = regIP.read(52)
+res_low = encIP.read(P_V_O_1)
+res_high = encIP.read(P_V_O_2)
 print(hex(res_high), hex(res_low))
