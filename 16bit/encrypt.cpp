@@ -165,7 +165,7 @@ ap_uint<16> Skeys(ap_uint<16> out){
 }
 
 
-void encrypt(ap_uint<128> key, ap_uint<64> *plaintext){
+void encrypt(ap_uint<128> *key, ap_uint<64> *plaintext){
 	ap_uint<64> tmp;
 	ap_uint<16> t0 = 0 ;
 	ap_uint<16> tmp0 ;
