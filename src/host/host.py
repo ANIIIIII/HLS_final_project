@@ -23,11 +23,11 @@ KEY_V_2 = 0x14
 KEY_V_3 = 0x18
 KEY_V_4 = 0x1C
 
-P_V_I_1 = 0x24
-P_V_I_2 = 0x28
+P_V_I_1 = 0x38
+P_V_I_2 = 0x3C
 
-P_V_O_1 = 0x30
-P_V_O_2 = 0x34
+P_V_O_1 = 0x44
+P_V_O_2 = 0x48
 
 encIP.write(KEY_V_1, 0)
 encIP.write(KEY_V_2, 0)
